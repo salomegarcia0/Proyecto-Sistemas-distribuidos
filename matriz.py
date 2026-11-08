@@ -1,14 +1,3 @@
-"""
-matriz de amenazas 3x3 y la regla de decisión.
-
-Si hay: 
-  * Un 1 AISLADO           -> ALERTA ROJA, el meteorito viene directo a la nave
-  * Dos o más 1 SEGUIDOS   -> TRÁNSITO SEGURO, pasa de lado
-  * Todo en 0              -> SIN AMENAZAS, todo fino
-
-Si un 1 está "aislado" se mira  sus dos vecinos en el anillo
-NO-N-NE-E-SE-S-SO-O. Si ninguno de los dos está en 1, está aislado.
-"""
 from protocolo import SECTORES, POS_MATRIZ
 
 ALERTA_ROJA = "ALERTA ROJA"
@@ -36,7 +25,7 @@ def vecinos(sector):
 
 
 def clasificar(matriz):
-    """Aplica la regla. Devuelve (decision, lista_de_sectores_aislados)."""
+    """Aplica la regla de detección. Devuelve (decision, lista_de_sectores_aislados)."""
     activos = [s for s, (f, c) in POS_MATRIZ.items() if matriz[f][c] == 1]
 
     if not activos:
