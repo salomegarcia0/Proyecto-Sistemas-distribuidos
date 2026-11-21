@@ -14,6 +14,7 @@ casos = [
     (["NE", "O"],           ALERTA_ROJA,     "Borde: NE y O NO son vecinos"),
     (["SE", "S", "SO"],     TRANSITO_SEGURO, "Tres seguidos"),
     (["N", "E"],            ALERTA_ROJA,     "Dos aislados = dos amenazas"),
+    (["SE", "S", "SO", "N"],ALERTA_ROJA, "Tres sensores seguidos y un cuarto aislado"),
 ]
 
 fallas = 0

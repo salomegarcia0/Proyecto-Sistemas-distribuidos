@@ -18,9 +18,9 @@ def crear_matriz(sectores_detectados):
 
 def vecinos(sector):
     """Los dos sectores pegados a este en el anillo."""
-    i = SECTORES.index(sector)
-    anterior = SECTORES[i - 1]                    
-    siguiente = SECTORES[(i + 1) % len(SECTORES)]  
+    i = SECTORES.index(sector) 
+    anterior = SECTORES[i - 1] 
+    siguiente = SECTORES[(i + 1) % len(SECTORES)] 
     return anterior, siguiente
 
 

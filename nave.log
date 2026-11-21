@@ -1,0 +1,87 @@
+Nave escuchando en 127.0.0.1:5000  (semilla 6057)
+Sensor N conectado
+Sensor SO conectado
+Sensor S conectado
+Sensor SE conectado
+Sensor NO conectado
+Sensor E conectado
+Sensor NE conectado
+Sensor O conectado
+  E detecta meteorito #0
+  NE detecta meteorito #0
+  N detecta meteorito #0
+
+=== Meteorito #0: TRANSITO SEGURO
+[0, 1, 1]
+[0, 0, 1]
+[0, 0, 0]
+
+  E detecta meteorito #1
+
+=== Meteorito #1: ALERTA ROJA
+[0, 0, 0]
+[0, 0, 1]
+[0, 0, 0]
+
+  NO detecta meteorito #2
+  S detecta meteorito #3
+
+=== Meteorito #2: ALERTA ROJA
+[1, 0, 0]
+[0, 0, 0]
+[0, 0, 0]
+
+
+=== Meteorito #3: ALERTA ROJA
+[0, 0, 0]
+[0, 0, 0]
+[0, 1, 0]
+
+  S detecta meteorito #4
+  SO detecta meteorito #4
+  O detecta meteorito #4
+
+=== Meteorito #4: TRANSITO SEGURO
+[0, 0, 0]
+[1, 0, 0]
+[1, 1, 0]
+
+  E detecta meteorito #5
+  NE detecta meteorito #5
+
+=== Meteorito #5: TRANSITO SEGURO
+[0, 0, 1]
+[0, 0, 1]
+[0, 0, 0]
+
+  SE detecta meteorito #6
+  S detecta meteorito #6
+
+=== Meteorito #6: TRANSITO SEGURO
+[0, 0, 0]
+[0, 0, 0]
+[0, 1, 1]
+
+  E detecta meteorito #7
+  Duplicado descartado: #7 desde E
+  NO detecta meteorito #8
+  Duplicado descartado: #8 desde NO
+
+=== Meteorito #7: ALERTA ROJA
+[0, 0, 0]
+[0, 0, 1]
+[0, 0, 0]
+
+
+=== Meteorito #8: ALERTA ROJA
+[1, 0, 0]
+[0, 0, 0]
+[0, 0, 0]
+
+  S detecta meteorito #9
+
+=== Meteorito #9: ALERTA ROJA
+[0, 0, 0]
+[0, 0, 0]
+[0, 1, 0]
+

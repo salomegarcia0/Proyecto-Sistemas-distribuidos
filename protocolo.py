@@ -6,7 +6,7 @@ PUERTO = 5000
 
 SECTORES = ["NO", "N", "NE", "E", "SE", "S", "SO", "O"]
 
-# (fila, columna) de cada sector en la matriz 3x3. El centro es la nave.
+# (fila, columna) de cada sector en la matriz 3x3. En anillo. El centro es la nave.
 POS_MATRIZ = { "NO": (0, 0), "N": (0, 1), "NE": (0, 2), "O":  (1, 0), "E":  (1, 2), "SO": (2, 0), "S": (2, 1), "SE": (2, 2)}
 
 INTERVALO_HEARTBEAT = 1   # el sensor avisa "sigo vivo" cada 1 segundo, esto para saber si la nave sigue contando con el 

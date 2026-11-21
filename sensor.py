@@ -41,7 +41,7 @@ class Sensor:
             hora = inicio + segundo
             espera = hora - time.time()
             if espera < 0:
-                continue                     # ese meteorito ya paso
+                continue
             time.sleep(espera)
 
             self.conexion.enviar("DETECTION", sector=self.sector, meteor_id=meteor_id)
@@ -50,11 +50,14 @@ class Sensor:
             if random.random() < PROB_DUPLICADO:
                 self.conexion.enviar("DETECTION", sector=self.sector, meteor_id=meteor_id)
                 print(f"[{self.sector}] (reenvío duplicado de #{meteor_id})")
+                
+        while hilo.is_alive():
+            time.sleep(0.1)
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in SECTORES:
-        print("Uso: python sensor.py <SECTOR> (NO, N, NE, E, SE, S, SO, O)")
+        print("Uso: python sensor.py <SECTOR>")
         sys.exit(1)
     try:
         Sensor(sys.argv[1]).ejecutar()

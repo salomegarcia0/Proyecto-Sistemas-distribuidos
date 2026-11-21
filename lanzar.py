@@ -1,4 +1,3 @@
-
 import os
 import subprocess
 import sys
@@ -6,7 +5,7 @@ import time
 
 from protocolo import SECTORES
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))  #busca para trabajar directamente en la carpeta del proyecto
+os.chdir(os.path.dirname(os.path.abspath(__file__)))   # trabajar en la carpeta del proyecto
 
 
 def abrir_sensor(sector):
@@ -14,8 +13,14 @@ def abrir_sensor(sector):
                             stdout=subprocess.DEVNULL)
 
 
-nave = subprocess.Popen([sys.executable, "nave.py"])
-time.sleep(1) # darle tiempo a la Nave de abrir el puerto
+if "--consola" in sys.argv:
+    nave = subprocess.Popen([sys.executable, "nave.py"])
+else:
+    log = open("nave.log", "w", encoding="utf-8")
+    nave = subprocess.Popen([sys.executable, "-u", "nave.py"], stdout=log,
+                            stderr=subprocess.STDOUT,
+                            env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+time.sleep(1)                                   # darle tiempo a la Nave de abrir el puerto
 sensores = {s: abrir_sensor(s) for s in SECTORES}
 print("Listo. Comandos: matar <SECTOR> | revivir <SECTOR> | salir")
 

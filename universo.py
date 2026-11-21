@@ -15,7 +15,7 @@ def generar_meteoritos(semilla, cantidad=300):
 
         if rng.random() < 0.45:
             tipo = "DIRECTO"
-            sectores = [rng.choice(SECTORES)]
+            sectores = [rng.choice(SECTORES)] # selecciona una secuencia de sectores
         else:
             tipo = "TANGENCIAL"
             largo = rng.randint(2, 3)                       # cruza 2 o 3 sectores
