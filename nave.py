@@ -19,12 +19,59 @@ class Nave:
         self.cola_pantalla = queue.Queue()   #hilos de nave -> interfaz gráfica
 
         self.ultimo_heartbeat = {}    # sector -> hora del ultimo heartbeat
+        self.conexiones = {}          # sector -> Conexion activa
+        self.cobertura = {}     # sector -> set de sectores que cubre
         self.candado = threading.Lock()  # protege ultimo_heartbeat
 
     def avisar(self, *evento):
         """Manda un evento a la interfaz gráfica."""
         self.cola_pantalla.put(evento)
 
+    def _buscar_vecino_vivo(self, sector_caido):
+        """Busca el sensor conectado más cercano en SECTORES."""
+        idx = SECTORES.index(sector_caido)
+        for paso in range(1, len(SECTORES)):
+            for direccion in (1, -1):
+                candidato = SECTORES[(idx + paso * direccion) % len(SECTORES)]
+                if candidato in self.conexiones:
+                    return candidato
+        return None
+
+    def reasignar_cobertura(self, sector_caido):
+        """Pasa los sectores del sensor caído a sus vecinos vivos."""
+        envios = []
+        with self.candado:
+            huerfanos = self.cobertura.pop(sector_caido, {sector_caido})
+            for huerfano in huerfanos:
+                vecino = self._buscar_vecino_vivo(huerfano)
+                if vecino:
+                    self.cobertura[vecino].add(huerfano)
+                    envios.append((self.conexiones[vecino], sorted(self.cobertura[vecino])))
+                    print(f"Cobertura: {vecino} ahora cubre también a {huerfano}")
+
+        for conn, lista in envios:
+            try:
+                conn.enviar("ASSIGN", sectores=lista)
+            except OSError:
+                pass
+
+    def restaurar_cobertura(self, sector_nuevo, conexion):
+        """Devuelve su sector original al sensor que se acaba de conectar."""
+        envios = []
+        with self.candado:
+            for otro, sectores in self.cobertura.items():
+                if sector_nuevo in sectores:
+                    sectores.remove(sector_nuevo)
+                    envios.append((self.conexiones[otro], sorted(sectores)))
+            self.cobertura[sector_nuevo] = {sector_nuevo}
+            envios.append((conexion, [sector_nuevo]))
+
+        for conn, lista in envios:
+            try:
+                conn.enviar("ASSIGN", sectores=lista)
+            except OSError:
+                pass
+            
     # conexiones
 
     def hilo_aceptar(self):
@@ -47,7 +94,8 @@ class Nave:
             self.ultimo_heartbeat[sector] = time.time()
         print(f"Sensor {sector} conectado")
         self.avisar("CONECTADO", sector)
-
+        self.conexiones[sector] = conexion
+        self.restaurar_cobertura(sector, conexion)
         while True: #va a escuchar mensajes hasta que se desconecte
             mensaje = conexion.recibir()
             if mensaje is None:
@@ -59,10 +107,16 @@ class Nave:
                 self.cola_detecciones.put(mensaje)
 
         conexion.cerrar()
+        se_desconecto = False
         with self.candado:
-            self.ultimo_heartbeat.pop(sector, None)
-        print(f"Sensor {sector} DESCONECTADO")
-        self.avisar("DESCONECTADO", sector)
+            if self.conexiones.get(sector) is conexion:
+                del self.conexiones[sector]
+                self.ultimo_heartbeat.pop(sector, None)
+                se_desconecto = True
+        if se_desconecto:
+            print(f"Sensor {sector} DESCONECTADO")
+            self.avisar("DESCONECTADO", sector)
+            self.reasignar_cobertura(sector)
 
     # heartbeats
     def hilo_monitor(self):
@@ -75,9 +129,11 @@ class Nave:
                             if ahora - t > TIMEOUT_HEARTBEAT]
                 for s in perdidos:
                     del self.ultimo_heartbeat[s]
+                    self.conexiones.pop(s, None)
             for s in perdidos:
                 print(f"Sensor {s} sin heartbeat por {TIMEOUT_HEARTBEAT} s -> DESCONECTADO")
                 self.avisar("DESCONECTADO", s)
+                self.reasignar_cobertura(s)
 
     #decisiones
     def hilo_evaluador(self):
