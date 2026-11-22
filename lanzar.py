@@ -8,9 +8,11 @@ from protocolo import SECTORES
 os.chdir(os.path.dirname(os.path.abspath(__file__)))   # trabajar en la carpeta del proyecto
 
 
-def abrir_sensor(sector):
-    return subprocess.Popen([sys.executable, "sensor.py", sector],
-                            stdout=subprocess.DEVNULL)
+def abrir_sensor(sector, es_alien=False):
+    cmd = [sys.executable, "sensor.py", sector]
+    if es_alien:
+        cmd.append("--alien")
+    return subprocess.Popen(cmd, stdout=subprocess.DEVNULL)
 
 
 if "--consola" in sys.argv:
@@ -22,7 +24,7 @@ else:
                             env={**os.environ, "PYTHONIOENCODING": "utf-8"})
 time.sleep(1)                                   # darle tiempo a la Nave de abrir el puerto
 sensores = {s: abrir_sensor(s) for s in SECTORES}
-print("Listo. Comandos: matar <SECTOR> | revivir <SECTOR> | salir")
+print("Listo. Comandos: matar <SECTOR> | revivir <SECTOR> | alien <SECTOR> | salir")
 
 try:
     while True:
@@ -37,6 +39,11 @@ try:
             elif orden == "REVIVIR":
                 sensores[sector] = abrir_sensor(sector)
                 print(f"Sensor {sector} abierto de nuevo")
+            elif orden == "ALIEN":
+                sensores[sector].kill()
+                time.sleep(0.2)
+                sensores[sector] = abrir_sensor(sector, es_alien=True)
+                print(f"Sensor {sector} atacado por aliens (enviará dato falso en 3s)")
         else:
             print("Comando no reconocido")
 except (KeyboardInterrupt, EOFError):
