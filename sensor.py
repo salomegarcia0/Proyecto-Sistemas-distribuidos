@@ -11,11 +11,13 @@ PROB_DUPLICADO = 0.1   # 10% de las veces manda la detección dos veces (simula 
 
 
 class Sensor:
-    def __init__(self, sector):
+    def __init__(self, sector, es_alien=False):
         self.sector = sector
+        self.es_alien = es_alien
         self.conexion = None
         self.sectores_activos = {sector}
         self.candado = threading.Lock()
+        self.activo = True
 
     def conectar(self):
         sock = socket.create_connection((HOST, PUERTO))
@@ -23,24 +25,31 @@ class Sensor:
 
         self.conexion.enviar("REGISTER", sector=self.sector)
         respuesta = self.conexion.recibir()
+        if respuesta["tipo"] == "CUARENTENA": 
+            raise ConnectionError("Sensor en cuarentena")    
         print(f"[{self.sector}] Conectado. Semilla recibida: {respuesta['semilla']}")
         return respuesta["semilla"], respuesta["inicio"]
 
     def enviar_heartbeats(self):
         """Corre en su propio hilo: avisa que está vivo cada segundo."""
-        while True:
+        while self.activo:
             self.conexion.enviar("HEARTBEAT", sector=self.sector)
             time.sleep(INTERVALO_HEARTBEAT)
 
-    def escuchar_nave(self): 
-        while True:
+    def escuchar_nave(self):
+        while self.activo:
             msg = self.conexion.recibir()
             if msg is None:
+                self.activo = False
                 break
             if msg["tipo"] == "ASSIGN":
                 with self.candado:
                     self.sectores_activos = set(msg["sectores"])
                 print(f"[{self.sector}] Cobertura actualizada: {sorted(self.sectores_activos)}")
+            elif msg["tipo"] == "CUARENTENA":
+                print(f"[{self.sector}] PUESTO EN CUARENTENA por la Nave.")
+                self.activo = False
+                break
 
     def ejecutar(self):
         semilla, inicio = self.conectar()
@@ -57,31 +66,43 @@ class Sensor:
         hilo_escucha = threading.Thread(target=self.escuchar_nave, daemon=True)
         hilo_escucha.start()
 
+        # si es alien, manda un meteorito falso a los 3 segundos
+        if self.es_alien:
+            time.sleep(3)
+            print(f"[{self.sector}] (ALIEN) Enviando detección falsa #99999")
+            self.conexion.enviar("DETECTION", origen=self.sector, sector=self.sector, meteor_id=99999)
+
         for segundo, meteor_id, sector in mis_meteoritos:
+            if not self.activo:
+                break
             hora = inicio + segundo
             espera = hora - time.time()
             if espera < 0:
                 continue                     # ese meteorito ya paso
             time.sleep(espera)
 
-            with self.candado:
-                if self.sector not in self.sectores_activos:
-                    continue 
+            if not self.activo:
+                break
 
-            self.conexion.enviar("DETECTION", sector=sector, meteor_id=meteor_id)
-            print(f"[{self.sector}] Detectado meteorito #{meteor_id} en #{sector}")
+            with self.candado:
+                if sector not in self.sectores_activos:
+                    continue
+
+            self.conexion.enviar("DETECTION", origen=self.sector, sector=sector, meteor_id=meteor_id)
+            print(f"[{self.sector}] Detectado meteorito #{meteor_id} en {sector}")
 
             if random.random() < PROB_DUPLICADO:
-                self.conexion.enviar("DETECTION", sector=self.sector, meteor_id=meteor_id)
+                self.conexion.enviar("DETECTION", origen=self.sector, sector=sector, meteor_id=meteor_id)
                 print(f"[{self.sector}] (reenvío duplicado de #{meteor_id})")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2 or sys.argv[1] not in SECTORES:
-        print("Uso: python sensor.py <SECTOR> (NO, N, NE, E, SE, S, SO, O)")
+    if len(sys.argv) < 2 or sys.argv[1] not in SECTORES:
+        print("Uso: python sensor.py <SECTOR> [--alien]")
         sys.exit(1)
+    es_alien = "--alien" in sys.argv
     try:
-        Sensor(sys.argv[1]).ejecutar()
+        Sensor(sys.argv[1], es_alien=es_alien).ejecutar()
     except (ConnectionError, OSError):
         print("Se perdió la conexión con la Nave.")
     except KeyboardInterrupt:

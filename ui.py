@@ -10,6 +10,7 @@ FONDO, PANEL, BORDE = "#0b1020", "#121a33", "#223056"
 TEXTO, SUAVE = "#e8ecff", "#8f9bc7"
 VERDE, ROJO, AZUL, AMBAR = "#2ea36b", "#e53950", "#2f7de1", "#f0b429"
 GRIS, CAIDO_BG, CAIDO_FG = "#3a4468", "#4a2430", "#ff9aa8"
+ALIEN_BG, ALIEN_FG = "#5a1f7a", "#e8b4ff"
 ROJO_OSCURO = "#7a1626"
 CIAN = "#38e1ff"
 C_PUBLICO, C_PRIVADO = "#7fb2ff", "#c9a7ff"       # color de la etiqueta de cada canal
@@ -17,7 +18,7 @@ C_PUBLICO, C_PRIVADO = "#7fb2ff", "#c9a7ff"       # color de la etiqueta de cada
 FUENTE, MONO = "Segoe UI", "Consolas"             # si no existen, Tk usa una por defecto
 
 # Estados posibles de un sensor
-ESPERANDO, EN_LINEA, CAIDO = "esperando", "en línea", "caído"
+ESPERANDO, EN_LINEA, CAIDO, CUARENTENA = "esperando", "en línea", "caído", "en cuarentena"
 # Canales de mensajes
 PUBLICO, PRIVADO = "PÚBLICO", "PRIVADO"
 
@@ -91,7 +92,7 @@ class Pantalla:
         # Leyenda de colores
         leyenda = tk.Frame(tarjeta, bg=PANEL)
         leyenda.pack(anchor="w", padx=12, pady=(0, 8))
-        items = [(VERDE, "En línea"), (GRIS, "Esperando"), (CAIDO_FG, "Caído"),
+        items = [(VERDE, "En línea"), (GRIS, "Esperando"), (CAIDO_FG, "Caído"), (ALIEN_FG, "Atacado Alien"),
                  (ROJO, "Amenaza directa"), (AZUL, "Tránsito lateral")]
         for i, (color, texto) in enumerate(items):
             tk.Label(leyenda, text="■", fg=color, bg=PANEL, font=(FUENTE, 10)
@@ -173,7 +174,7 @@ class Pantalla:
         self.registro.pack(side="left", fill="both", expand=True)
         barra.config(command=self.registro.yview)
         for nombre, color in (("suave", SUAVE), ("rojo", ROJO), ("azul", "#6fa8ff"),
-                              ("verde", "#4fd18f"), ("ambar", AMBAR)):
+                              ("verde", "#4fd18f"), ("ambar", AMBAR),("morado", ALIEN_FG)):
             self.registro.tag_config(nombre, foreground=color)
         self.registro.tag_config("publico", foreground=C_PUBLICO, font=(MONO, 10, "bold"))
         self.registro.tag_config("privado", foreground=C_PRIVADO, font=(MONO, 10, "bold"))
@@ -194,7 +195,7 @@ class Pantalla:
 
     def _actualizar_conexion(self):
         n, total = self._en_linea(), len(SECTORES)
-        hay_caidos = any(e == CAIDO for e in self.estados.values())
+        hay_caidos = any(e in (CAIDO, CUARENTENA) for e in self.estados.values())
         if n == total:
             texto, color = f"●  {n}/{total} sensores en línea", VERDE
         elif n == 0:
@@ -217,6 +218,8 @@ class Pantalla:
                 cuadro.config(bg=VERDE, fg="white", text=f"{sector}\n●  En línea")
             elif estado == CAIDO:
                 cuadro.config(bg=CAIDO_BG, fg=CAIDO_FG, text=f"{sector}\n×  Caído")
+            elif estado == CUARENTENA:
+                cuadro.config(bg=ALIEN_BG, fg=ALIEN_FG, text=f"{sector}\n×  Atacado Alien")
             else:
                 cuadro.config(bg=GRIS, fg="#c9d0ee", text=f"{sector}\n○  Esperando")
 
@@ -290,6 +293,12 @@ class Pantalla:
                                     f"(cobertura reducida a {self._en_linea()}/{len(SECTORES)})", "rojo")
             self._feedback(f"Sensor {sector} caído: el sector {sector} quedó sin vigilancia.", AMBAR)
             #self.ventana.bell()
+        
+        elif tipo == "CUARENTENA":
+            sector = evento[1]
+            self.estados[sector] = CUARENTENA
+            self.registrar(PUBLICO, f"ALERTA ALIEN Sensor {sector} atacado -> en CUARENTENA", "morado")
+            self._feedback(f"Sensor {sector} atacado por aliens! Aislado en cuarentena.", ALIEN_FG)
 
         elif tipo == "DUPLICADO":
             _, sector, meteor_id = evento
